@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebAPIAutores;
 
@@ -10,9 +11,11 @@ using WebAPIAutores;
 namespace WebAPIAutores.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20221117193711_Modificaciondelosmodelos")]
+    partial class Modificaciondelosmodelos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,14 +63,14 @@ namespace WebAPIAutores.Migrations
                     b.Property<int>("AutorId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Editorial")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("FechaPublicacion")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Genero")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IdiomaOriginal")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("NumPaginas")
+                        .HasColumnType("int");
 
                     b.Property<string>("Titulo")
                         .HasColumnType("nvarchar(max)");
