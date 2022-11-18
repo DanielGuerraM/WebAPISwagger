@@ -15,10 +15,22 @@ namespace WebAPIAutores.Controllers
             this.context = context;
         }
 
-        [HttpGet]
+        [HttpGet("todos")]
         public async Task<ActionResult<List<Autor>>> Get()
         {
             return await context.Autores.Include(x => x.Libros).ToListAsync();
+        }
+
+        [HttpGet("primero")]
+        public async Task<ActionResult<Autor>> Primero()
+        {
+            return await context.Autores.FirstOrDefaultAsync();
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<Autor>> Get(int id)
+        {
+            return await context.Autores.Include(x => x.Libros).FirstOrDefaultAsync(x => x.Id == id);
         }
 
         [HttpPost]

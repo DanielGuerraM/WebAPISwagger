@@ -21,19 +21,11 @@ namespace WebAPIAutores.Controllers
             return await context.Libros.Include(x => x.Autor).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        [HttpGet("listado")]
+        [HttpGet("todos")]
         public async Task<ActionResult<List<Libro>>> Get()
         {
             return await context.Libros.ToListAsync();
         }
-
-        //[HttpGet("AutorId:int")]
-        //public async Task<ActionResult<Libro>> LibrosPorAutor(int AutorId)
-        //{
-        //    return await context.Libros.Include(x => x.AutorId).FirstOrDefaultAsync(x => x.AutorId == AutorId);
-        //}
-
-
 
         [HttpPost]
         public async Task<ActionResult<Libro>> Post(Libro libro)
@@ -48,6 +40,41 @@ namespace WebAPIAutores.Controllers
             context.Add(libro);
             await context.SaveChangesAsync();
 
+            return Ok();
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult> Put(Libro libro, int id)
+        {
+            var existeLibro = await context.Libros.AnyAsync(x => x.Id == id);
+
+            if(!existeLibro)
+            {
+                return NotFound();
+            }
+
+            if(libro.Id != id)
+            {
+                return BadRequest("El id del libro no coincide con el id de la URL");
+            }
+
+            context.Update(libro);
+            await context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<ActionResult> Delete(int id)
+        {
+            var existeLibro = await context.Libros.AnyAsync(x => x.Id == id);
+
+            if(!existeLibro)
+            {
+                return NotFound();
+            }
+
+            context.Remove(new Libro() { Id = id });
+            await context.SaveChangesAsync();
             return Ok();
         }
     }
