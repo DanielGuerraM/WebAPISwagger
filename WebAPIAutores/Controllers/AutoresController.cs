@@ -6,7 +6,7 @@ namespace WebAPIAutores.Controllers
 {
     [ApiController]
     [Route("api/autores")]
-    public class AutoresController: ControllerBase
+    public class AutoresController : ControllerBase
     {
         private readonly ApplicationDBContext context;
 
@@ -15,7 +15,9 @@ namespace WebAPIAutores.Controllers
             this.context = context;
         }
 
+        [HttpGet]
         [HttpGet("todos")]
+        [HttpGet("/todos")]
         public async Task<ActionResult<List<Autor>>> Get()
         {
             return await context.Autores.Include(x => x.Libros).ToListAsync();
@@ -30,11 +32,31 @@ namespace WebAPIAutores.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<Autor>> Get(int id)
         {
-            return await context.Autores.Include(x => x.Libros).FirstOrDefaultAsync(x => x.Id == id);
+            var existeAutor = await context.Autores.Include(x => x.Libros).FirstOrDefaultAsync(x => x.Id == id);
+
+            if(existeAutor == null)
+            {
+                return NotFound();
+            }
+
+            return existeAutor;
+        }
+
+        [HttpGet("{nombres}")]
+        public async Task<ActionResult<Autor>> Get([FromRoute]string nombres)
+        {
+            var existeAutor = await context.Autores.FirstOrDefaultAsync(x => x.Nombres.Contains(nombres));
+
+            if (existeAutor == null)
+            {
+                return NotFound();
+            }
+
+            return existeAutor;
         }
 
         [HttpPost]
-        public async Task<ActionResult> Post(Autor autor)
+        public async Task<ActionResult> Post([FromBody]Autor autor)
         {
             context.Add(autor);
             await context.SaveChangesAsync();
