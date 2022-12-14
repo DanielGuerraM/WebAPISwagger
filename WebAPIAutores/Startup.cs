@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Text.Json.Serialization;
 using WebAPIAutores.Controllers;
+using WebAPIAutores.Filtros;
 using WebAPIAutores.Middlewares;
 using WebAPIAutores.Servicios;
 
@@ -18,7 +20,10 @@ namespace WebAPIAutores
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddJsonOptions(x =>
+            services.AddControllers(opciones =>
+            {
+                opciones.Filters.Add(typeof(FiltroDeExepcion));
+            }).AddJsonOptions(x =>
                 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
             services.AddDbContext<ApplicationDBContext>(Options => 
@@ -31,6 +36,12 @@ namespace WebAPIAutores
             services.AddTransient<ServicioTransient>();
             services.AddScoped<ServicioScoped>();
             services.AddSingleton<ServicioSingleton>();
+            services.AddTransient<MiFiltrodeAccion>();
+            services.AddHostedService<EscribirEnArchivo>();
+
+            services.AddResponseCaching();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
 
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
@@ -59,6 +70,8 @@ namespace WebAPIAutores
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseResponseCaching();
 
             app.UseAuthorization();
 

@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebAPIAutores.Entidades;
+using WebAPIAutores.Filtros;
 using WebAPIAutores.Servicios;
 
 namespace WebAPIAutores.Controllers
 {
     [ApiController]
     [Route("api/autores")]
+    //[Authorize]
     public class AutoresController : ControllerBase
     {
         private readonly ApplicationDBContext context;
@@ -29,6 +32,8 @@ namespace WebAPIAutores.Controllers
         }
 
         [HttpGet("GUID")]
+        //[ResponseCache(Duration = 10)]
+        [ServiceFilter(typeof(MiFiltrodeAccion))]
         public ActionResult ObtenerGuids()
         {
             return Ok(new
@@ -45,8 +50,11 @@ namespace WebAPIAutores.Controllers
         [HttpGet]
         [HttpGet("todos")]
         [HttpGet("/todos")]
+        //[ResponseCache(Duration = 10)]
+        [ServiceFilter(typeof(MiFiltrodeAccion))]
         public async Task<ActionResult<List<Autor>>> Get()
         {
+            throw new NotImplementedException();
             logger.LogInformation("Estamos obteniendo los autores");
             logger.LogWarning("Este es un mensaje de prueba");
             return await context.Autores.Include(x => x.Libros).ToListAsync();
