@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WebAPIAutores.DTOs;
 using WebAPIAutores.Entidades;
 
 namespace WebAPIAutores.Controllers
@@ -9,23 +11,26 @@ namespace WebAPIAutores.Controllers
     public class LibrosController: ControllerBase
     {
         private readonly ApplicationDBContext context;
+        private readonly IMapper mapper;
 
-        public LibrosController(ApplicationDBContext context)
+        public LibrosController(ApplicationDBContext context, IMapper mapper)
         {
             this.context = context;
+            this.mapper = mapper;
         }
 
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Libro>> Get(int id)
+        [HttpGet("{id:int}", Name="obtenerLibro")]
+        public async Task<ActionResult<LibroDTOConAutores>> Get(int id)
         {
-            var existeLibro = await context.Libros.Include(x => x.Autor).FirstOrDefaultAsync(x => x.Id == id);
+            var libro = await context.Libros
+                .Include(libroBD => libroBD.Comentarios)
+                .Include(libroBD => libroBD.AutoresLibros)
+                .ThenInclude(autorLibroDB => autorLibroDB.autor)
+                .FirstOrDefaultAsync(x => x.Id == id);
 
-            if(existeLibro == null)
-            {
-                return NotFound();
-            }
+            libro.AutoresLibros = libro.AutoresLibros.OrderBy(x => x.Order).ToList();
 
-            return existeLibro;
+            return mapper.Map<LibroDTOConAutores>(libro);
         }
 
         [HttpGet("titulo")]
@@ -54,39 +59,52 @@ namespace WebAPIAutores.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Libro>> Post(Libro libro)
+        public async Task<ActionResult<Libro>> Post(LibroCreacionDTO libroCreacionDTO)
         {
-            var existeAutor = await context.Autores.AnyAsync(x => x.Id == libro.AutorId);
-
-            if(!existeAutor)
+            if(libroCreacionDTO.AutoresIds == null)
             {
-                return BadRequest($"No existe el autor de Id: {libro.AutorId}");
+                return BadRequest("No se puede crear un libro sin autores");
             }
+
+            var autoresIds = await context.Autores
+                .Where(autorBD => libroCreacionDTO.AutoresIds.Contains(autorBD.Id)).Select(x => x.Id).ToListAsync();
+
+            if (libroCreacionDTO.AutoresIds.Count != autoresIds.Count)
+            {
+                return BadRequest("No existe uno de los autores enviados");
+            }
+
+            var libro = mapper.Map<Libro>(libroCreacionDTO);
+
+            AsignarOdernAutores(libro);
 
             context.Add(libro);
             await context.SaveChangesAsync();
 
-            return Ok();
+            var libroDTO = mapper.Map<LibroDTO>(libro);
+
+            return CreatedAtRoute("obtenerLibro", new { id = libro.Id }, libroDTO);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put(Libro libro, int id)
+        public async Task<ActionResult> Put(int id, LibroCreacionDTO libroCreacionDTO)
         {
-            var existeLibro = await context.Libros.AnyAsync(x => x.Id == id);
+            var libroDB = await context.Libros
+                .Include(x => x.AutoresLibros)
+                .FirstOrDefaultAsync(x => x.Id == id);
 
-            if(!existeLibro)
+            if(libroDB == null)
             {
                 return NotFound();
             }
 
-            if(libro.Id != id)
-            {
-                return BadRequest("El id del libro no coincide con el id de la URL");
-            }
+            libroDB = mapper.Map(libroCreacionDTO, libroDB);
 
-            context.Update(libro);
+            AsignarOdernAutores(libroDB);
+
             await context.SaveChangesAsync();
-            return Ok();
+
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
@@ -102,6 +120,17 @@ namespace WebAPIAutores.Controllers
             context.Remove(new Libro() { Id = id });
             await context.SaveChangesAsync();
             return Ok();
+        }
+
+        private void AsignarOdernAutores(Libro libro)
+        {
+            if (libro.AutoresLibros != null)
+            {
+                for (int i = 0; i < libro.AutoresLibros.Count; i++)
+                {
+                    libro.AutoresLibros[i].Order = i;
+                }
+            }
         }
     }
 }

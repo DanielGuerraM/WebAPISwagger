@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using WebAPIAutores.Controllers;
 using WebAPIAutores.Filtros;
 using WebAPIAutores.Middlewares;
-using WebAPIAutores.Servicios;
 
 namespace WebAPIAutores
 {
@@ -29,36 +30,20 @@ namespace WebAPIAutores
             services.AddDbContext<ApplicationDBContext>(Options => 
                 Options.UseSqlServer(Configuration.GetConnectionString("defaultConnection")));
 
-            services.AddTransient<IServicio, ServicioA>();//AddTransient - Nos dara una nueva instancia de la clase servicio A
-            //services.AddScoped<IServicio, ServicioA>();//AddScoped - Dentro del mismo contexto siempre nos dara la misma instancia, pero entre distintas peticiones HTTP se daran diferentes instancias
-            //services.AddSingleton<IServicio, ServicioA>();//AddSingleton - Siempre se nos da la misma instancia sin importar ni el contexto ni la peticion HTTP
-            
-            services.AddTransient<ServicioTransient>();
-            services.AddScoped<ServicioScoped>();
-            services.AddSingleton<ServicioSingleton>();
-            services.AddTransient<MiFiltrodeAccion>();
-            services.AddHostedService<EscribirEnArchivo>();
-
-            services.AddResponseCaching();
-
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
 
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIAutores", Version = "v1" });
+            });
+
+            services.AddAutoMapper(typeof(Startup));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
-            //app.UseMiddleware<LoguearRespuestaHTTPMiddleware>();
             app.UseLoguearRespuestaHTTP();
-
-            app.Map("/ruta1", app =>
-            {
-                app.Run(async contexto =>
-                {
-                    await contexto.Response.WriteAsync("Estoy interceptando la tuberia");
-                });
-            });
            
             if (env.IsDevelopment())
             {
@@ -70,8 +55,6 @@ namespace WebAPIAutores
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
-            app.UseResponseCaching();
 
             app.UseAuthorization();
 
